@@ -1,2 +1,11 @@
+# Python
 __pycache__/
 *.pyc
+
+# Секрети YouTube OAuth — НІКОЛИ не комітити
+client_secret.json
+token.json
+
+# Рендери відео (генеруються заново зі скрипта)
+*.mp4
+out/

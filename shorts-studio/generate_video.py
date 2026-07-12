@@ -14,7 +14,7 @@ import math
 import os
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 W, H = 1080, 1920
 FPS = 30
@@ -250,14 +250,21 @@ def render(lang, out_dir):
         "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k",
         "-shortest", "-movflags", "+faststart", out,
     ]
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE,
-                            stderr=subprocess.DEVNULL)
-    for frame in make_frames(lang):
-        proc.stdin.write(frame)
-    proc.stdin.close()
-    proc.wait()
+    log_path = os.path.join(out_dir, f".ffmpeg_{lang}.log")
+    with open(log_path, "wb") as log:
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=log)
+        try:
+            for frame in make_frames(lang):
+                proc.stdin.write(frame)
+            proc.stdin.close()
+        except BrokenPipeError:
+            pass  # ffmpeg впав — причина буде в лог-файлі
+        proc.wait()
     if proc.returncode != 0:
-        raise RuntimeError(f"ffmpeg failed for {lang}")
+        with open(log_path) as f:
+            tail = "".join(f.readlines()[-15:])
+        raise RuntimeError(f"ffmpeg failed for {lang}:\n{tail}")
+    os.remove(log_path)
     print(f"OK {out}")
 
 
